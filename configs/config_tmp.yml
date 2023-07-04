@@ -1,0 +1,42 @@
+srv: 
+  maxHeaderBytes:    # in bytes  
+  readTimeout:       # nanoseconds 
+  writeTimeout:      # nanoseconds  
+  readHeaderTimeout: # nanoseconds
+  timeOutSec:        # seconds     
+  port:              # string           
+  host:              # string 
+
+postgres:
+  username:        # string
+  host:            # string
+  port:            # string
+  dbname:          # string
+  password:        # string
+  options:         # string
+  connMaxLifetime: # nanoseconds
+  maxOpenConns:    # int  
+  maxIdleConns:    # int 
+
+redis:
+  addr:     # string, port + ip/domain name
+  username: # string, for docker default
+
+mongo:
+  host: # string
+  port: # string
+  db:   # string
+  collection: # string
+
+order_srv:
+  ratingtimeouthours: 5
+  prevridestimeoutseconds: 10
+
+grpc_order:
+  securityPath: # string
+  addr:         # string, docker_name:port or ip:port
+  timeout:      # nanoseconds 
+
+grpc_user:
+  securityPath: # string
+  addr:         # string, docker_name:port or ip:port 

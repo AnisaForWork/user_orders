@@ -1,0 +1,3 @@
+token-gen:
+  port : 8080
+  name : tokens

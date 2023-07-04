@@ -1,0 +1,12 @@
+version: "3.8"
+
+services:  
+  tokens:
+    image: andrianovartemii/gm-test-task-auth-generator:latest
+    ports:
+      - 8082:8080
+    environment:
+      AUTH_TOKEN_LIFETIME: ${AUTH_TOKEN_LIFETIME}
+
+  user:
+    build: ./
