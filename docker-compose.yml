@@ -3,10 +3,28 @@ version: "3.8"
 services:  
   tokens:
     image: andrianovartemii/gm-test-task-auth-generator:latest
-    ports:
-      - 8082:8080
     environment:
       AUTH_TOKEN_LIFETIME: ${AUTH_TOKEN_LIFETIME}
 
+
+  mysql:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER:  ${MYSQL_USER} 
+      MYSQL_PASSWORD:  ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD:  ${MYSQL_ROOT_PASSWORD}
+    ports: 
+      - '3309:3306' 
+    volumes: 
+      - "./docker/volumes/mysql:/var/lib/mysql"
+
   user:
     build: ./
+    ports:
+      - 8080:8080
+    depends_on:
+      - mysql 
+    env_file:
+      - ".env"

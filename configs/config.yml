@@ -1,3 +1,23 @@
 token-gen:
   port : 8080
   name : tokens
+
+srv: 
+  maxHeaderBytes: 1048576  
+  readTimeout: 10000000000   #seconds * time 
+  writeTimeout: 10000000000  
+  readHeaderTimeout: 10000000000
+  timeOutSec: 10 # 10s     
+  port: "8080"          
+  host: "0.0.0.0" 
+
+mysql:
+  username: "mysql"
+  host: "mysql"
+  port: "3306"
+  dbname: "mysql"
+  password: "root"
+  options: ""
+  connMaxLifetime: 180000000000 #minute * time
+  maxOpenConns: 10  
+  maxIdleConns: 10 
