@@ -12,12 +12,7 @@ import (
 type Service interface {
 }
 
-// Router declare interface that should implement any group of handlers that are going to be added to possible routes
-type Router interface {
-	RegisterRouts(r *gin.Engine)
-}
-
-// @title           User service API
+// @title           User orders service API
 // @version         1.0
 // @description     User orders service API using swagger 2.0.
 // @termsOfService  http://swagger.io/terms/

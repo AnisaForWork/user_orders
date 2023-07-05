@@ -113,6 +113,8 @@ type DB struct {
 	ConnMaxLifetime time.Duration
 	MaxOpenConns    int
 	MaxIdleConns    int
+	ReconnRetry     int
+	TimeWaitPerTry  time.Duration
 }
 
 // DBConfig returns configuration for postgres
@@ -137,8 +139,9 @@ func (cfg *Configurator) DBConfig() (*DB, error) {
 		ConnMaxLifetime: viper.GetDuration("mysql.connMaxLifetime"),
 		MaxOpenConns:    viper.GetInt("mysql.maxOpenConns"),
 		MaxIdleConns:    viper.GetInt("mysql.MaxIdleConns"),
+		ReconnRetry:     viper.GetInt("mysql.retry"),
+		TimeWaitPerTry:  viper.GetDuration("mysql.timeWaitPerTry"),
 	}
-
 	return db, nil
 }
 

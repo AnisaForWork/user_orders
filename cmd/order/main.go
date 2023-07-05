@@ -15,20 +15,9 @@ import (
 	"github.com/AnisaForWork/user_orders/internal/service"
 	"github.com/AnisaForWork/user_orders/migration"
 
+	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
 )
-
-func init() {
-	// Log as JSON instead of the default ASCII formatter.
-	log.SetFormatter(&log.JSONFormatter{})
-
-	// Output to stdout instead of the default stderr
-	// Can be any io.Writer, see below for File example
-	log.SetOutput(os.Stdout)
-
-	// Only log the warning severity or above.
-	log.SetLevel(log.InfoLevel)
-}
 
 func main() {
 	cfg, err := config.NewConfigure()
@@ -39,6 +28,8 @@ func main() {
 		}).WithError(err).Panic("Config initialization failed")
 	}
 
+	log.Info("Configuration provider initialized")
+
 	lgf := log.Fields{}
 	isRelease := cfg.AppENV() != config.Development
 	if !isRelease {
@@ -47,7 +38,9 @@ func main() {
 		lgf["APP_ENV"] = "production"
 	}
 
-	log.WithFields(lgf).Info("Read application environment")
+	log.WithFields(lgf).Info("Got application environment")
+
+	initLogger(cfg, isRelease)
 
 	migrator := migration.NewMigratory()
 
@@ -87,25 +80,21 @@ func main() {
 
 }
 
-func initDBwithRetry(cfg *config.Configurator, migr *migration.Migratory) (repo *mysql.Repository, err error) {
+func initLogger(cfg *config.Configurator, isRelease bool) {
+	log.SetOutput(os.Stdout)
 
-	for i := 0; i < 10; i++ {
-		repo, err = initDB(cfg, migr)
-		if err == nil {
-			break
-		}
-		log.WithFields(log.Fields{
-			"retryNumber": i,
-		}).WithError(err).Warn("Could not initialize DB, trying to retry")
-		time.Sleep(time.Second * 3)
+	if !isRelease {
+		log.SetLevel(log.InfoLevel)
+		log.SetFormatter(&log.TextFormatter{})
+	} else {
+		log.SetLevel(log.WarnLevel)
+		log.SetFormatter(&log.JSONFormatter{})
 	}
-
-	return repo, err
 }
 
 // initDB reads db configuration, connects to postgres, does migration if needed
 // returns struct that implements logic.Repository interface or error
-func initDB(cfg *config.Configurator, migr *migration.Migratory) (repo *mysql.Repository, err error) {
+func initDBwithRetry(cfg *config.Configurator, migr *migration.Migratory) (repo *mysql.Repository, err error) {
 	log.WithFields(log.Fields{
 		"cfg for": "mysql",
 	}).Info("Getting configs for db")
@@ -120,22 +109,38 @@ func initDB(cfg *config.Configurator, migr *migration.Migratory) (repo *mysql.Re
 	}).Info("Getting db")
 
 	log.WithFields(log.Fields{"conf": dbCfg}).Info("DB config")
-	db, err := mysql.NewMysqlDB(dbCfg)
-	if err != nil {
-		return nil, fmt.Errorf("mysql failed to initialize with error %w", err)
+
+	var db *sqlx.DB
+	for i := 0; i < dbCfg.ReconnRetry; i++ {
+
+		db, err = mysql.NewMysqlDB(dbCfg)
+		if err != nil {
+			return nil, fmt.Errorf("mysql failed to initialize with error %w", err)
+		}
+
+		if err == nil {
+
+			log.WithFields(log.Fields{
+				"dbType": "mysql",
+			}).Info("Migrating db")
+
+			if err = migr.Migrate(db); err != nil {
+				return nil, fmt.Errorf("mysql failed to migrate with error: %w", err)
+			}
+
+			repo = mysql.NewMysqlRepository(db)
+
+			log.WithFields(log.Fields{}).Info("Repository loaded")
+
+			return repo, nil
+		}
+
+		log.WithFields(log.Fields{
+			"retryNumber": i,
+		}).WithError(err).Warn("Could not initialize DB, trying to retry")
+
+		time.Sleep(dbCfg.TimeWaitPerTry)
 	}
 
-	log.WithFields(log.Fields{
-		"dbType": "mysql",
-	}).Info("Migrating db")
-
-	if err = migr.Migrate(db); err != nil {
-		return nil, fmt.Errorf("mysql failed to migrate with error: %w", err)
-	}
-
-	repo = mysql.NewMysqlRepository(db)
-
-	log.WithFields(log.Fields{}).Info("Repository loaded")
-
-	return repo, nil
+	return repo, err
 }

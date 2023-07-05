@@ -17,7 +17,9 @@ mysql:
   port: "3306"
   dbname: "mysql"
   password: "root"
-  options: ""
+  options: "charset=utf8mb4&parseTime=True&loc=Local"
   connMaxLifetime: 180000000000 #minute * time
   maxOpenConns: 10  
   maxIdleConns: 10 
+  retry: 10
+  timeWaitPerTry : 3000000000 #3s
