@@ -1,12 +1,14 @@
 package mysql
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/AnisaForWork/user_orders/internal/config"
 
+	"github.com/go-sql-driver/mysql"
 	_ "github.com/go-sql-driver/mysql" //nolint:blank-imports // only for sqlx
 	"github.com/jmoiron/sqlx"
 )
@@ -39,12 +41,12 @@ func NewMysqlDB(cfg *config.DB) (*sqlx.DB, error) {
 	return db, err
 }
 
-// Service contains db layer(postgres) as methods of this struct
+// Service contains db layer(mysql) as methods of this struct
 type Repository struct {
 	db *sqlx.DB
 }
 
-// NewRouter returns instane db layer(postgres)
+// NewRouter returns instane db layer(mysql)
 func NewMysqlRepository(db *sqlx.DB) *Repository {
 	repo := &Repository{
 		db: db,
@@ -56,4 +58,48 @@ func NewMysqlRepository(db *sqlx.DB) *Repository {
 // Close for graceful shutdown
 func (r *Repository) Close() error {
 	return r.db.Close()
+}
+
+// User is db layer user model
+type User struct {
+	ID       int64     `json:"id" `
+	Login    string    `json:"login" `
+	FullName string    `json:"fullName" `
+	Email    string    `json:"email" `
+	Password []byte    `json:"password" `
+	Created  time.Time `json:"created"`
+}
+
+// CreateUser insert use in db
+func (r *Repository) CreateUser(ctx context.Context, user *User) error {
+
+	query := "INSERT INTO users (login, email, password, fullName) values (?,?,?,?) "
+
+	ctx, cancel := context.WithTimeout(ctx, timeOut)
+	defer cancel()
+
+	res, err := r.db.ExecContext(ctx, query, user.Login, user.Email, user.Password, user.FullName)
+
+	if err != nil {
+		errMsql, ok := err.(*mysql.MySQLError)
+		if ok && errMsql.Number == 1062 {
+			return ErrUniqConstrViolation
+		}
+		return err
+	}
+
+	_, err = res.LastInsertId()
+	return err
+}
+
+// UserRegistered gives first user with given phone number
+func (r *Repository) UserRegistered(ctx context.Context, login string, pwd []byte) error {
+	query := "SELECT 1 FROM users WHERE login=? AND password=? LIMIT 1"
+
+	ctx, cancel := context.WithTimeout(ctx, timeOut)
+	defer cancel()
+
+	var checker int
+
+	return r.db.QueryRowContext(ctx, query, login, pwd).Scan(&checker)
 }
