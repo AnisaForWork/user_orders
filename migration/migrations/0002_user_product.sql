@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 CREATE TABLE  IF NOT EXISTS products(
     barcode varchar(10) NOT NULL,
-    name varchar(255) NOT NULL,
+    name varchar(60) NOT NULL,
     desc Text NOT NULL ,
     cost int NOT NULL , 
     userId int NOT NULL ,
