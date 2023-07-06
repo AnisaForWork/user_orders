@@ -103,3 +103,13 @@ func (r *Repository) UserRegistered(ctx context.Context, login string, pwd []byt
 
 	return r.db.QueryRowContext(ctx, query, login, pwd).Scan(&checker)
 }
+
+type Product struct {
+	Barcode string    `json:"barcode" `
+	Name    string    `json:"name" `
+	Desc    string    `json:"desc" `
+	Cost    int       `json:"cost" `
+	UserID  int64     `json:"userId"`
+	Deleted int64     `json:"deleted"`
+	Created time.Time `json:"created"`
+}
