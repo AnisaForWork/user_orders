@@ -1,15 +1,137 @@
 basePath: /
+definitions:
+  auth.Auth:
+    properties:
+      login:
+        example: Login123
+        maxLength: 40
+        minLength: 3
+        type: string
+      password:
+        default: password
+        maxLength: 40
+        minLength: 6
+        type: string
+    required:
+    - login
+    - password
+    type: object
+  auth.Registration:
+    properties:
+      email:
+        example: test@test.com
+        type: string
+      fullName:
+        example: Ivanov Ivan Ivanovich
+        maxLength: 75
+        minLength: 3
+        type: string
+      login:
+        example: Login123
+        maxLength: 40
+        minLength: 3
+        type: string
+      password:
+        example: password
+        maxLength: 40
+        minLength: 6
+        type: string
+    required:
+    - email
+    - fullName
+    - login
+    - password
+    type: object
+  response.JSONResult:
+    properties:
+      data: {}
+      message:
+        type: string
+    type: object
 host: localhost:8080
 info:
   contact:
     email: support@swagger.io
     name: API Support
     url: http://www.swagger.io/support
-  description: User service for Inno taxi API using swagger 2.0.
+  description: User orders service API using swagger 2.0.
   termsOfService: http://swagger.io/terms/
-  title: User service API
+  title: User orders service API
   version: "1.0"
-paths: {}
+paths:
+  /auth/auth:
+    post:
+      consumes:
+      - application/json
+      description: sing in user if they have given valid credentials, returns access
+        token(JWT)
+      parameters:
+      - description: login,password
+        in: body
+        name: auth
+        required: true
+        schema:
+          $ref: '#/definitions/auth.Auth'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+      summary: Sing in user
+      tags:
+      - auth
+  /auth/reg:
+    post:
+      consumes:
+      - application/json
+      description: 'singUp with credentials user : login,full name,email,password'
+      parameters:
+      - description: login,full name,email,password
+        in: body
+        name: reg
+        required: true
+        schema:
+          $ref: '#/definitions/auth.Registration'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+      summary: Register user
+      tags:
+      - auth
 securityDefinitions:
   ApiKeyAuth:
     in: header

@@ -20,7 +20,183 @@ const docTemplate = `{
     },
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
-    "paths": {},
+    "paths": {
+        "/auth/auth": {
+            "post": {
+                "description": "sing in user if they have given valid credentials, returns access token(JWT)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Sing in user",
+                "parameters": [
+                    {
+                        "description": "login,password",
+                        "name": "auth",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.Auth"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSONResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSONResult"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSONResult"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSONResult"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSONResult"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/reg": {
+            "post": {
+                "description": "singUp with credentials user : login,full name,email,password",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Register user",
+                "parameters": [
+                    {
+                        "description": "login,full name,email,password",
+                        "name": "reg",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.Registration"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSONResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSONResult"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSONResult"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSONResult"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "auth.Auth": {
+            "type": "object",
+            "required": [
+                "login",
+                "password"
+            ],
+            "properties": {
+                "login": {
+                    "type": "string",
+                    "maxLength": 40,
+                    "minLength": 3,
+                    "example": "Login123"
+                },
+                "password": {
+                    "type": "string",
+                    "default": "password",
+                    "maxLength": 40,
+                    "minLength": 6
+                }
+            }
+        },
+        "auth.Registration": {
+            "type": "object",
+            "required": [
+                "email",
+                "fullName",
+                "login",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "test@test.com"
+                },
+                "fullName": {
+                    "type": "string",
+                    "maxLength": 75,
+                    "minLength": 3,
+                    "example": "Ivanov Ivan Ivanovich"
+                },
+                "login": {
+                    "type": "string",
+                    "maxLength": 40,
+                    "minLength": 3,
+                    "example": "Login123"
+                },
+                "password": {
+                    "type": "string",
+                    "maxLength": 40,
+                    "minLength": 6,
+                    "example": "password"
+                }
+            }
+        },
+        "response.JSONResult": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "message": {
+                    "type": "string"
+                }
+            }
+        }
+    },
     "securityDefinitions": {
         "ApiKeyAuth": {
             "type": "apiKey",
@@ -36,8 +212,8 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "localhost:8080",
 	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "User service API",
-	Description:      "User service for Inno taxi API using swagger 2.0.",
+	Title:            "User orders service API",
+	Description:      "User orders service API using swagger 2.0.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 }
