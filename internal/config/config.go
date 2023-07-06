@@ -3,11 +3,12 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
-	"github.com/spf13/viper"
-
+	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 // HTTPServer holds config information for http server
@@ -32,9 +33,19 @@ type Configurator struct {
 
 // NewConfigure set paths to config.yml
 func NewConfigure() (*Configurator, error) {
+	fmt.Println(os.Getenv("CURR_ENV"))
+	switch os.Getenv("CURR_ENV") {
+	case "local":
 
-	viper.AddConfigPath("configs")
-	viper.SetConfigName("config")
+		viper.AddConfigPath("../../configs")
+		viper.SetConfigName("config")
+		godotenv.Load("../../.env")
+	default:
+		log.Info("application runs in Development mode")
+
+		viper.AddConfigPath("configs")
+		viper.SetConfigName("config")
+	}
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("failed to read conf file: %w", err)
@@ -122,7 +133,7 @@ func (cfg *Configurator) DBConfig() (*DB, error) {
 	log.WithFields(log.Fields{
 		"source1": viper.ConfigFileUsed(),
 		"source2": ".env",
-	}).Info("reading postgres configuration from file")
+	}).Info("reading mysql configuration from file")
 
 	pwd, ok := os.LookupEnv("MYSQL_PASSWORD")
 	if !ok {
@@ -147,8 +158,110 @@ func (cfg *Configurator) DBConfig() (*DB, error) {
 
 // Service holds config information all defined services
 type Service struct {
+	Auth *Auth
 }
 
-func (cfg *Configurator) ServiceConfig() *Service {
-	return &Service{}
+// Auth holds config information required for Authentication service
+type Auth struct {
+	PwdSec *PwdSecurity
+}
+
+// PwdSecurity holds configuration for sequring user's password
+type PwdSecurity struct {
+	Salt     []byte
+	Times    uint32
+	Memory   uint32
+	Parallel uint8
+	Length   uint32
+}
+
+// ServiceCfgWithConn returns configuration for service
+func (cfg *Configurator) ServiceConfig() (*Service, error) {
+
+	auth, err := cfg.AuthSrvCfg()
+	if err != nil {
+		return nil, err
+	}
+
+	s := &Service{
+		Auth: auth,
+	}
+	return s, nil
+}
+
+// AuthSrvCfg returns configuration for User Authentication service
+func (cfg *Configurator) AuthSrvCfg() (*Auth, error) {
+	log.WithFields(log.Fields{
+		"source": ".env",
+	}).Info("reading auth service configurations")
+
+	pwdSec, err := cfg.pwdSecurityCfg()
+	if err != nil {
+		return nil, err
+	}
+
+	s := &Auth{
+		PwdSec: pwdSec,
+	}
+	return s, nil
+}
+
+func (cfg *Configurator) pwdSecurityCfg() (*PwdSecurity, error) {
+	salt, ok := os.LookupEnv(os.Getenv("PWD_SEC_SALT"))
+	if ok {
+		return nil, fmt.Errorf("password security params not set")
+	}
+
+	t, err := strconv.Atoi(os.Getenv("PWD_SEC_TIMES"))
+	if err != nil {
+		return nil, fmt.Errorf("password security params not set")
+	}
+
+	m, err := strconv.Atoi(os.Getenv("PWD_SEC_MEMORY"))
+	if err != nil {
+		return nil, fmt.Errorf("password security params not set")
+	}
+
+	p, err := strconv.Atoi(os.Getenv("PWD_SEC_PARALLEL"))
+	if err != nil {
+		return nil, fmt.Errorf("password security params not set")
+	}
+
+	l, err := strconv.Atoi(os.Getenv("PWD_SEC_LENGTH"))
+	if err != nil {
+		return nil, fmt.Errorf("password security params not set")
+	}
+
+	pwd := &PwdSecurity{
+		Salt:     []byte(salt),
+		Times:    uint32(t),
+		Memory:   uint32(m),
+		Parallel: uint8(p),
+		Length:   uint32(l),
+	}
+	return pwd, nil
+}
+
+type JWTProvider struct {
+	Host         string
+	Port         int
+	Timeout      time.Duration
+	Retry        int
+	TimeoutRetry time.Duration
+}
+
+// DBConfig returns configuration for postgres
+func (cfg *Configurator) JWTProviderConfig() *JWTProvider {
+	log.WithFields(log.Fields{
+		"source1": viper.ConfigFileUsed(),
+	}).Info("reading postgres configuration from file")
+
+	jp := &JWTProvider{
+		Host:         viper.GetString("tokenGen.host"),
+		Port:         viper.GetInt("tokenGen.port"),
+		Timeout:      viper.GetDuration("tokenGen.timeout"),
+		Retry:        viper.GetInt("tokenGen.retry"),
+		TimeoutRetry: viper.GetDuration("tokenGen.timeoutRetry"),
+	}
+	return jp
 }
