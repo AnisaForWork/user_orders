@@ -10,6 +10,7 @@ import (
 
 	"github.com/AnisaForWork/user_orders/internal/config"
 	"github.com/AnisaForWork/user_orders/internal/handler"
+	"github.com/AnisaForWork/user_orders/internal/provider/token"
 	"github.com/AnisaForWork/user_orders/internal/repository/mysql"
 	"github.com/AnisaForWork/user_orders/internal/server"
 	"github.com/AnisaForWork/user_orders/internal/service"
@@ -18,6 +19,11 @@ import (
 	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
 )
+
+type ServicesAndProviders struct {
+	*service.Service
+	*token.JWTProvider
+}
 
 func main() {
 	cfg, err := config.NewConfigure()
@@ -48,14 +54,30 @@ func main() {
 	if err != nil {
 		log.WithFields(log.Fields{
 			"place": "system(main)",
-		}).WithError(err).Panic("Initialization of postgres repo failed")
+		}).WithError(err).Panic("Initialization of mysql repo failed")
 	}
 	defer repo.Close()
 
-	servCfg := cfg.ServiceConfig()
-	serv := service.NewService(repo, servCfg)
+	providerCfg := cfg.JWTProviderConfig()
+	provider, err := token.NewJWTProvider(*providerCfg)
+	if err != nil {
+		log.WithFields(log.Fields{"place": "system(main)"}).WithError(err).Panic("Failed to connect to token generator")
+	}
 
-	hndl := handler.NewRouter(serv, isRelease)
+	servCfg, err := cfg.ServiceConfig()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"place": "system(main)",
+		}).WithError(err).Panic("Cant access service config")
+	}
+	serv := service.NewService(repo, provider, servCfg)
+
+	srvWPrv := ServicesAndProviders{
+		serv,
+		provider,
+	}
+
+	hndl := handler.NewRouter(srvWPrv, isRelease)
 
 	srvCfg := cfg.ServerConfig()
 	srv := server.NewServer(srvCfg, hndl)
@@ -92,7 +114,7 @@ func initLogger(cfg *config.Configurator, isRelease bool) {
 	}
 }
 
-// initDB reads db configuration, connects to postgres, does migration if needed
+// initDB reads db configuration, connects to mysql, does migration if needed
 // returns struct that implements logic.Repository interface or error
 func initDBwithRetry(cfg *config.Configurator, migr *migration.Migratory) (repo *mysql.Repository, err error) {
 	log.WithFields(log.Fields{
