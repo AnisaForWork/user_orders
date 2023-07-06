@@ -28,11 +28,11 @@ mongo:
   db:   # string
   collection: # string
 
-order_srv:
+product_srv:
   ratingtimeouthours: 5
   prevridestimeoutseconds: 10
 
-grpc_order:
+grpc_product:
   securityPath: # string
   addr:         # string, docker_name:port or ip:port
   timeout:      # nanoseconds 

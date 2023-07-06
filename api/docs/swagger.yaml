@@ -54,9 +54,9 @@ info:
     email: support@swagger.io
     name: API Support
     url: http://www.swagger.io/support
-  description: User orders service API using swagger 2.0.
+  description: User products service API using swagger 2.0.
   termsOfService: http://swagger.io/terms/
-  title: User orders service API
+  title: User products service API
   version: "1.0"
 paths:
   /auth/auth:

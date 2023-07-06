@@ -16,9 +16,9 @@ type Service interface {
 	auth.Service
 }
 
-// @title           User orders service API
+// @title           User products service API
 // @version         1.0
-// @description     User orders service API using swagger 2.0.
+// @description     User products service API using swagger 2.0.
 // @termsOfService  http://swagger.io/terms/
 
 // @contact.name   API Support
