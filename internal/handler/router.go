@@ -2,6 +2,8 @@ package handler
 
 import (
 	docs "github.com/AnisaForWork/user_orders/api/docs"
+	"github.com/AnisaForWork/user_orders/internal/handler/auth"
+	"github.com/AnisaForWork/user_orders/internal/handler/middleware"
 
 	"github.com/gin-gonic/gin"
 	swaggerfiles "github.com/swaggo/files"
@@ -10,6 +12,8 @@ import (
 
 // Service holds all needed services
 type Service interface {
+	middleware.Service
+	auth.Service
 }
 
 // @title           User orders service API
@@ -36,7 +40,30 @@ func NewRouter(service Service, isRelease bool) *gin.Engine {
 
 	router := gin.New()
 
+	middl := middleware.NewMiddleware(service)
+
+	router.Use(middl.Logger())
+
+	router.Use(middl.Recovery())
+
 	router.GET("/docs/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	docs.SwaggerInfo.BasePath = "/"
+
+	authR := auth.NewRouter(service)
+	Mount("/auth", router, authR.InitRoutes().Routes())
+
 	return router
+}
+
+// Grouper declare interface that used to pass into Mount function
+type Grouper interface {
+	Group(relativePath string, handlers ...gin.HandlerFunc) *gin.RouterGroup
+}
+
+// Mount adds to router new routs
+func Mount(basePath string, router Grouper, routes gin.RoutesInfo) {
+	sub := router.Group(basePath)
+	for _, handler := range routes {
+		sub.Handle(handler.Method, handler.Path, handler.HandlerFunc)
+	}
 }
