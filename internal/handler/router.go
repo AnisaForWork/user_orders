@@ -4,6 +4,7 @@ import (
 	docs "github.com/AnisaForWork/user_orders/api/docs"
 	"github.com/AnisaForWork/user_orders/internal/handler/auth"
 	"github.com/AnisaForWork/user_orders/internal/handler/middleware"
+	"github.com/AnisaForWork/user_orders/internal/handler/product"
 
 	"github.com/gin-gonic/gin"
 	swaggerfiles "github.com/swaggo/files"
@@ -51,6 +52,11 @@ func NewRouter(service Service, isRelease bool) *gin.Engine {
 
 	authR := auth.NewRouter(service)
 	Mount("/auth", router, authR.InitRoutes().Routes())
+
+	authenticated := router.Group("/", middl.Authentication())
+
+	prod := product.NewRouter(service)
+	Mount("/product", authenticated, prod.InitRoutes().Routes())
 
 	return router
 }

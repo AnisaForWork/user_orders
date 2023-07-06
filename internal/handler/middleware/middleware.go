@@ -19,7 +19,7 @@ const (
 	AuthHeaderKey   = "Authorization"
 	AuthTypeBearer  = "bearer"
 	authTokenFields = 2
-	InvalidUser     = int64(-1)
+	InvalidUser     = string("")
 )
 
 // Service used to call auth service level auth
