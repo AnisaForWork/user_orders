@@ -246,6 +246,13 @@ func (cfg *Configurator) pwdSecurityCfg() (*PwdSecurity, error) {
 // Auth holds config information required for Authentication service
 type Product struct {
 	PathToCheckDir string
+	PathToTemplate string
+	TemplateName   string
+	FontName       string
+	FontFileName   string
+	TimeFormat     string
+	TemplateW      float64
+	TemplateH      float64
 }
 
 // ProductConfig returns configuration for product service
@@ -256,6 +263,13 @@ func (cfg *Configurator) ProductConfig() *Product {
 
 	pr := &Product{
 		PathToCheckDir: viper.GetString("product.pathToCheckDir"),
+		PathToTemplate: viper.GetString("product.pathToTemplate"),
+		TemplateName:   viper.GetString("product.templateName"),
+		FontName:       viper.GetString("product.fontName"),
+		FontFileName:   viper.GetString("product.fontFileName"),
+		TimeFormat:     viper.GetString("product.timeFormat"),
+		TemplateW:      viper.GetFloat64("product.templateW"),
+		TemplateH:      viper.GetFloat64("product.templateH"),
 	}
 	return pr
 }
