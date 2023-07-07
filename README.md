@@ -16,14 +16,14 @@ Service shceme:
 
 ## Requests
 Documented via swagger 2.
-- `POST \reg` Register user - info about user added to DB;
-- `GET \auth` Authenticate user - user provides password plus login and receives jwt token;
-- `POST \ord` Create oredr 
-- `DELETE \ord` Delete product 
-- `PATCH \ord` Edit product;
-- `GET \ords` View all user products;
-- `GET \ord` View user product by id;
-- `GET \chk` Generate product check.
+- `POST /auth/reg` Register user - info about user added to DB;
+- `POST /auth/auth` Authenticate user - user provides password plus login and receives jwt token;
+- `POST /product/` Create product 
+- `DELETE /product/:barcode` Delete product  
+- `GET /product/all` View all user products;
+- `GET /product/:barcode` View user product by id;
+- `GET /product/{barcode}/check` Generate product check.
+- `GET /product/check/{checkName}` Get product check file.
 
 ## Used technologies
 - DB - MySQL;
