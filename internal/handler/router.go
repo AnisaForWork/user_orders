@@ -15,6 +15,7 @@ import (
 type Service interface {
 	middleware.Service
 	auth.Service
+	product.Service
 }
 
 // @title           User products service API

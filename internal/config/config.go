@@ -158,7 +158,8 @@ func (cfg *Configurator) DBConfig() (*DB, error) {
 
 // Service holds config information all defined services
 type Service struct {
-	Auth *Auth
+	Auth    *Auth
+	Product *Product
 }
 
 // Auth holds config information required for Authentication service
@@ -242,6 +243,23 @@ func (cfg *Configurator) pwdSecurityCfg() (*PwdSecurity, error) {
 	return pwd, nil
 }
 
+// Auth holds config information required for Authentication service
+type Product struct {
+	PathToCheckDir string
+}
+
+// ProductConfig returns configuration for product service
+func (cfg *Configurator) ProductConfig() *Product {
+	log.WithFields(log.Fields{
+		"source1": viper.ConfigFileUsed(),
+	}).Info("reading product service configuration from file")
+
+	pr := &Product{
+		PathToCheckDir: viper.GetString("product.pathToCheckDir"),
+	}
+	return pr
+}
+
 type JWTProvider struct {
 	Host         string
 	Port         int
@@ -250,11 +268,11 @@ type JWTProvider struct {
 	TimeoutRetry time.Duration
 }
 
-// DBConfig returns configuration for postgres
+// JWTProviderConfig returns configuration for jwt generator
 func (cfg *Configurator) JWTProviderConfig() *JWTProvider {
 	log.WithFields(log.Fields{
 		"source1": viper.ConfigFileUsed(),
-	}).Info("reading postgres configuration from file")
+	}).Info("reading token generator configuration from file")
 
 	jp := &JWTProvider{
 		Host:         viper.GetString("tokenGen.host"),

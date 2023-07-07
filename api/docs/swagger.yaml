@@ -42,6 +42,31 @@ definitions:
     - login
     - password
     type: object
+  product.Created:
+    properties:
+      barcode:
+        default: "1234567890"
+        type: string
+      cost:
+        default: 100
+        minimum: 10
+        type: integer
+      desc:
+        default: Description
+        maxLength: 1000
+        minLength: 10
+        type: string
+      name:
+        default: product name
+        maxLength: 60
+        minLength: 10
+        type: string
+    required:
+    - barcode
+    - cost
+    - desc
+    - name
+    type: object
   response.JSONResult:
     properties:
       data: {}
@@ -132,6 +157,197 @@ paths:
       summary: Register user
       tags:
       - auth
+  /product/:
+    post:
+      consumes:
+      - application/json
+      description: user provides products barcode, name, description and cost
+      parameters:
+      - description: barcode,name,desc,cost
+        in: body
+        name: prosuct
+        required: true
+        schema:
+          $ref: '#/definitions/product.Created'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+      security:
+      - ApiKeyAuth: []
+      summary: Create new product
+      tags:
+      - product
+  /product/{id}:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: archives product but don't delete it from storage, only owner of
+        product can do it
+      parameters:
+      - description: Product barcode
+        in: path
+        name: barcode
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete user product
+      tags:
+      - product
+  /product/{id}/check:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: using info about given product generates PDF check using special
+        PDF template
+      parameters:
+      - description: Product barcode
+        in: path
+        name: barcode
+        required: true
+        type: string
+      produces:
+      - application/json
+      - application/pdf
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+      security:
+      - ApiKeyAuth: []
+      summary: Generates check
+      tags:
+      - product
+  /product/all:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: configured to return set number of products(barcodes+name+cost)
+        per request, user sends configures how many products per page be seen and
+        offset, only owner of product can view it
+      parameters:
+      - description: Next page to retrieve
+        in: query
+        maximum: 50000
+        minimum: 1
+        name: p
+        required: true
+        type: integer
+      - description: Number of products info per page
+        in: query
+        maximum: 100
+        minimum: 1
+        name: "n"
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+      security:
+      - ApiKeyAuth: []
+      summary: Returns all users products with pagnation
+      tags:
+      - product
+  /product/check/{checkName}:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: sends user PDF check generated previously using product info, only
+        owner of product can do it
+      parameters:
+      - description: Check file name
+        in: path
+        name: checkName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+      security:
+      - ApiKeyAuth: []
+      summary: Returns check of user product
+      tags:
+      - product
 securityDefinitions:
   ApiKeyAuth:
     in: header
