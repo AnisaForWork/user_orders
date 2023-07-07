@@ -168,6 +168,7 @@ func (r *Repository) UserProducts(ctx context.Context, amount int, offset int, u
 
 	query := `SELECT barcode, name, cost FROM products 
 				JOIN users ON users.id=products.userId AND users.login=? 
+				WHERE deleted=FALSE
 				ORDER BY products.created 
 				LIMIT ? OFFSET ?`
 
@@ -228,9 +229,10 @@ func (r *Repository) Delete(ctx context.Context, barcode string, login string) e
 	ctx, cancel := context.WithTimeout(ctx, timeOut)
 	defer cancel()
 
-	query := `UPDATE products SET deleted=TRUE 
-				JOIN users ON users.id=products.userId AND users.login=? 
-				WHERE barcode=? `
+	query := `UPDATE products 
+				JOIN users ON users.id=products.userId	AND users.login=?
+					SET deleted=TRUE 
+					WHERE barcode=? `
 
 	res, err := r.db.ExecContext(ctx, query, login, barcode)
 
