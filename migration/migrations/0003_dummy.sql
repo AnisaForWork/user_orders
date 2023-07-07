@@ -2,7 +2,7 @@
 -- +goose StatementBegin
  
 
-CREATE TABLE prchecks( 
+CREATE TABLE  IF NOT EXISTS prchecks( 
     filename varchar(45) NOT NULL,
     barcode  varchar(10) NOT NULL,
     CONSTRAINT u_pkey PRIMARY KEY (filename),
