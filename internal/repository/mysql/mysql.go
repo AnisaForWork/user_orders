@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"time"
@@ -21,6 +22,7 @@ const (
 
 var (
 	ErrUniqConstrViolation = errors.New("unique constraints violation")
+	ErrNoRows              = errors.New("no rows in table returned")
 )
 
 // NewMysqlD connects to Mysql with URL scheme [username[:password]@][protocol[(address)]]/dbname[?param1=value1&...&paramN=valueN]
@@ -105,12 +107,235 @@ func (r *Repository) UserRegistered(ctx context.Context, login string, pwd []byt
 }
 
 type Product struct {
-	Barcode  string    `json:"barcode" `
-	Name     string    `json:"name" `
-	Desc     string    `json:"desc" `
-	Cost     int       `json:"cost" `
-	UserID   int64     `json:"userId"`
-	Deleted  int64     `json:"deleted"`
-	Created  time.Time `json:"created"`
-	FileName string    `json:"fileName"`
+	Barcode string    `json:"barcode" `
+	Name    string    `json:"name" `
+	Desc    string    `json:"desc" `
+	Cost    int       `json:"cost" `
+	UserID  int64     `json:"userId"`
+	Deleted bool      `json:"deleted"`
+	Created time.Time `json:"created"`
+}
+
+func (r *Repository) Create(ctx context.Context, pr Product, login string) (err error) {
+	ctx, cancel := context.WithTimeout(ctx, timeOut*3)
+	defer cancel()
+
+	query := "INSERT INTO products (barcode, name, desc, cost,userId) values (?,?,?,?,?) "
+	selector := "SELECT id FROM users WHERE login = ?"
+
+	var tx *sqlx.Tx
+	tx, err = r.db.BeginTxx(ctx, &sql.TxOptions{})
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	if err != nil {
+		return err
+	}
+	var id int64
+
+	err = tx.QueryRow(selector, login).Scan(&id)
+
+	if err != nil {
+		return ErrNoRows
+	}
+
+	res, err := r.db.ExecContext(ctx, query, pr.Barcode, pr.Name, pr.Desc, pr.Cost, id)
+
+	if err != nil {
+		errMsql, ok := err.(*mysql.MySQLError)
+		if ok && errMsql.Number == 1062 {
+			return ErrUniqConstrViolation
+		}
+		return err
+	}
+
+	_, err = res.LastInsertId()
+
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit()
+
+	return err
+}
+
+func (r *Repository) UserProducts(ctx context.Context, amount int, offset int, usrID string) ([]Product, error) {
+
+	query := `SELECT barcode, name, cost FROM products 
+				JOIN users ON users.id=products.userId AND users.login=? 
+				ORDER BY created 
+				LIMIT ? OFFSET ?`
+
+	ctx, cancel := context.WithTimeout(ctx, timeOut*3)
+	defer cancel()
+
+	prods := []Product{}
+
+	err := r.db.SelectContext(ctx, &prods, query, usrID, amount, offset)
+
+	return prods, err
+}
+func (r *Repository) UserProduct(ctx context.Context, barcode string, login string) (pr *Product, checks []string, err error) {
+	queryPr := `SELECT barcode, name, cost, desc,created FROM products 
+					JOIN users ON users.id=products.userId AND users.login=? 
+					WHERE barcode=? AND deleted=FALSE 
+					LIMIT 1`
+	queryCh := `SELECT filename FROM checks 
+					JOIN products ON products.barcode=checks.barcode 
+					LIMIT 100`
+
+	ctx, cancel := context.WithTimeout(ctx, timeOut*3)
+	defer cancel()
+
+	var tx *sqlx.Tx
+	tx, err = r.db.BeginTxx(ctx, &sql.TxOptions{})
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	pr = &Product{}
+	err = r.db.SelectContext(ctx, pr, queryPr, login, barcode)
+	if err != nil {
+		return nil, nil, ErrNoRows
+	}
+
+	checks = []string{}
+	err = r.db.SelectContext(ctx, &checks, queryCh, barcode)
+	if err != nil {
+		return nil, nil, ErrNoRows
+	}
+
+	err = tx.Commit()
+
+	if err != nil {
+		return nil, nil, err
+	}
+	return pr, checks, err
+}
+func (r *Repository) Delete(ctx context.Context, barcode string, login string) error {
+	ctx, cancel := context.WithTimeout(ctx, timeOut)
+	defer cancel()
+
+	query := `UPDATE products SET deleted=TRUE 
+				JOIN users ON users.id=products.userId AND users.login=? 
+				WHERE barcode=? `
+
+	res, err := r.db.ExecContext(ctx, query, login, barcode)
+
+	if err != nil {
+		return err
+	}
+
+	rowC, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowC == 0 {
+		return ErrNoRows
+	}
+
+	return nil
+}
+func (r *Repository) ProductInfoForCheck(ctx context.Context, barcode string, login string) (*Product, error) {
+	queryPr := `SELECT barcode, name, cost FROM products 
+					JOIN users ON users.id=products.userId AND users.login=? 
+					WHERE barcode=? AND deleted=FALSE 
+					LIMIT 1`
+	ctx, cancel := context.WithTimeout(ctx, timeOut*3)
+	defer cancel()
+
+	var pr Product
+
+	err := r.db.SelectContext(ctx, &pr, queryPr, login, barcode)
+	if err != nil {
+		return nil, ErrNoRows
+	}
+
+	return &pr, nil
+}
+func (r *Repository) UpdateCheckInfo(ctx context.Context, filename string, barcode string, login string) (err error) {
+	ctx, cancel := context.WithTimeout(ctx, timeOut*3)
+	defer cancel()
+
+	query := "INSERT INTO checks (filename,barcode) values (?,?) "
+	selector := `SELECT 1 FROM products 
+					JOIN users ON users.id=products.userId AND users.login=? 
+					WHERE barcode=? AND deleted=FALSE 
+					LIMIT 1`
+
+	var tx *sqlx.Tx
+	tx, err = r.db.BeginTxx(ctx, &sql.TxOptions{})
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	if err != nil {
+		return err
+	}
+	var checkUser int
+
+	err = tx.QueryRow(selector, login).Scan(&checkUser)
+
+	if err != nil {
+		return ErrNoRows
+	}
+
+	res, err := r.db.ExecContext(ctx, query, filename, barcode)
+
+	if err != nil {
+		errMsql, ok := err.(*mysql.MySQLError)
+		if ok && errMsql.Number == 1062 {
+			return ErrUniqConstrViolation
+		}
+		return err
+	}
+
+	_, err = res.LastInsertId()
+
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit()
+
+	return err
+}
+func (r *Repository) CheckOwnership(ctx context.Context, filename string, login string) error {
+	ctx, cancel := context.WithTimeout(ctx, timeOut)
+	defer cancel()
+
+	query := `SELECT 1 FROM checks 
+				JOIN products ON checks.barcode=products.barcode 
+				JOIN users ON users.id=products.userId AND users.login=? 
+				WHERE checks.filename=? AND products.deleted=FALSE LIMIT 1`
+
+	res, err := r.db.ExecContext(ctx, query, login, filename)
+
+	if err != nil {
+		return err
+	}
+
+	rowC, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowC == 0 {
+		return ErrNoRows
+	}
+
+	return nil
 }

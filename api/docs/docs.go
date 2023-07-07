@@ -152,7 +152,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "description": "barcode,name,desc,cost",
-                        "name": "prosuct",
+                        "name": "product",
                         "in": "body",
                         "required": true,
                         "schema": {

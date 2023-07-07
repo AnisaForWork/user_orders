@@ -21,9 +21,9 @@ import (
 type Repository interface {
 	Create(ctx context.Context, pr mysql.Product, login string) error
 	UserProducts(ctx context.Context, amount int, offset int, usrID string) ([]mysql.Product, error)
-	UserProduct(ctx context.Context, barcode string, login string) (mysql.Product, error)
+	UserProduct(ctx context.Context, barcode string, login string) (*mysql.Product, []string, error)
 	Delete(ctx context.Context, barcode string, login string) error
-	ProfuctInfoForCheck(ctx context.Context, barcode string, login string) (mysql.Product, error)
+	ProductInfoForCheck(ctx context.Context, barcode string, login string) (*mysql.Product, error)
 	UpdateCheckInfo(ctx context.Context, filename string, barcode string, login string) error
 	CheckOwnership(ctx context.Context, filename string, login string) error
 }
@@ -53,7 +53,7 @@ type Product struct {
 	Descr    string
 	Cost     int
 	Created  time.Time
-	FileName string
+	FileName []string
 }
 
 func NewService(repo Repository, cfg config.Product) *PService {
@@ -116,7 +116,7 @@ func (s *PService) UserProducts(ctx context.Context, page, prodsPerPage int, log
 
 // UserProduct returns user product
 func (s *PService) UserProduct(ctx context.Context, barcode string, login string) (*Product, error) {
-	dbModel, err := s.Repo.UserProduct(ctx, barcode, login)
+	dbModel, checks, err := s.Repo.UserProduct(ctx, barcode, login)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +127,7 @@ func (s *PService) UserProduct(ctx context.Context, barcode string, login string
 		Descr:    dbModel.Desc,
 		Cost:     dbModel.Cost,
 		Created:  dbModel.Created,
-		FileName: dbModel.FileName,
+		FileName: checks,
 	}
 	return res, nil
 }
@@ -139,7 +139,7 @@ func (s *PService) Delete(ctx context.Context, barcode string, login string) err
 
 // GenCheck creates check for product? saves in configured directory and send PDF to user
 func (s *PService) GenCheck(ctx context.Context, barcode string, login string) (gopdf.GoPdf, error) {
-	prod, err := s.Repo.ProfuctInfoForCheck(ctx, barcode, login)
+	prod, err := s.Repo.ProductInfoForCheck(ctx, barcode, login)
 
 	if err != nil {
 		return gopdf.GoPdf{}, err

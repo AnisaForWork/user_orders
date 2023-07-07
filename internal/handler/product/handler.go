@@ -29,7 +29,7 @@ type Product struct {
 	Descr    string     `json:"desc,omitempty"`
 	Cost     int        `json:"cost,omitempty"`
 	Created  *time.Time `json:"created,omitempty"`
-	FileName string     `json:"filaname,omitempty"`
+	FileName []string   `json:"filaname,omitempty"`
 }
 
 // @Summary      Create new product

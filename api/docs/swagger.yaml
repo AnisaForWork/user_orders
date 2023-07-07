@@ -165,7 +165,7 @@ paths:
       parameters:
       - description: barcode,name,desc,cost
         in: body
-        name: prosuct
+        name: product
         required: true
         schema:
           $ref: '#/definitions/product.Created'
