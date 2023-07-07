@@ -22,8 +22,8 @@ Documented via swagger 2.
 - `DELETE /product/:barcode` Delete product  
 - `GET /product/all` View all user products;
 - `GET /product/:barcode` View user product by id;
-- `GET /product/{barcode}/check` Generate product check.
-- `GET /product/check/{checkName}` Get product check file.
+- `GET /product/:barcode/check` Generate product check.
+- `GET /product/check/:checkName` Get product check file.
 
 ## Used technologies
 - DB - MySQL;
