@@ -26,5 +26,4 @@ Makefile
   
 ./configs/config.yml
 docker/volumes 
-Dockerfile.hot
-tmp/
+Dockerfile.hot 

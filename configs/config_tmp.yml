@@ -1,42 +1,37 @@
+tokenGen:
+  port : 
+  host : 
+  timeout: 
+  retry: 
+  timeoutRetry:  
+
 srv: 
-  maxHeaderBytes:    # in bytes  
-  readTimeout:       # nanoseconds 
-  writeTimeout:      # nanoseconds  
-  readHeaderTimeout: # nanoseconds
-  timeOutSec:        # seconds     
-  port:              # string           
-  host:              # string 
+  maxHeaderBytes:  
+  readTimeout:  
+  writeTimeout:  
+  readHeaderTimeout:  
+  timeOutSec:      
+  port:           
+  host:  
 
-postgres:
-  username:        # string
-  host:            # string
-  port:            # string
-  dbname:          # string
-  password:        # string
-  options:         # string
-  connMaxLifetime: # nanoseconds
-  maxOpenConns:    # int  
-  maxIdleConns:    # int 
+mysql:
+  username:  
+  host:   
+  port:  
+  dbname:    
+  options:  
+  connMaxLifetime:  
+  maxOpenConns:  
+  maxIdleConns: 
+  retry: 
+  timeWaitPerTry :  
 
-redis:
-  addr:     # string, port + ip/domain name
-  username: # string, for docker default
-
-mongo:
-  host: # string
-  port: # string
-  db:   # string
-  collection: # string
-
-product_srv:
-  ratingtimeouthours: 5
-  prevridestimeoutseconds: 10
-
-grpc_product:
-  securityPath: # string
-  addr:         # string, docker_name:port or ip:port
-  timeout:      # nanoseconds 
-
-grpc_user:
-  securityPath: # string
-  addr:         # string, docker_name:port or ip:port 
+product: 
+  pathToCheckDir:  
+  pathToTemplate:  
+  templateName: 
+  fontName:  
+  fontFileName:  
+  timeFormat: 
+  templateW:  
+  templateH :  

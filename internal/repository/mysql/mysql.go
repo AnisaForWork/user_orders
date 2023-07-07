@@ -64,12 +64,13 @@ func (r *Repository) Close() error {
 
 // User is db layer user model
 type User struct {
-	ID       int64     `json:"id" `
-	Login    string    `json:"login" `
-	FullName string    `json:"fullName" `
-	Email    string    `json:"email" `
-	Password []byte    `json:"password" `
-	Created  time.Time `json:"created"`
+	ID        int64     `json:"id" `
+	Login     string    `json:"login" `
+	FullName  string    `json:"fullName" `
+	Email     string    `json:"email" `
+	Password  []byte    `json:"password" `
+	Created   time.Time `json:"created"`
+	FileNames []string  `json:"fileNames"`
 }
 
 // CreateUser insert use in db
@@ -179,6 +180,7 @@ func (r *Repository) UserProducts(ctx context.Context, amount int, offset int, u
 
 	return prods, err
 }
+
 func (r *Repository) UserProduct(ctx context.Context, barcode string, login string) (pr *Product, prchecks []string, err error) {
 	queryPr := `SELECT barcode, name, cost, descr,products.created FROM products 
 					JOIN users ON users.id=products.userId AND users.login=? 

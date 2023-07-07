@@ -3,6 +3,7 @@ version: "3.8"
 services:  
   tokens:
     image: andrianovartemii/gm-test-task-auth-generator:latest
+    restart: always
     ports: 
       - '8082:8080' 
     environment:
@@ -22,11 +23,15 @@ services:
     volumes: 
       - "./docker/volumes/mysql:/var/lib/mysql"
 
-#  user:
-#    build: ./
-#    ports:
-#      - 8080:8080
-#    depends_on:
-#      - mysql 
-#    env_file:
-#      - ".env"
+  user:
+    build: ./
+    restart: always
+    ports:
+      - 8080:8080
+    depends_on:
+      - mysql 
+    env_file:
+      - ".env"
+    volumes: 
+      - "./templates:/templates"
+      - "./tmp:/tmp"

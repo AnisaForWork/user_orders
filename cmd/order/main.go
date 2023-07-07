@@ -136,9 +136,6 @@ func initDBwithRetry(cfg *config.Configurator, migr *migration.Migratory) (repo 
 	for i := 0; i < dbCfg.ReconnRetry; i++ {
 
 		db, err = mysql.NewMysqlDB(dbCfg)
-		if err != nil {
-			return nil, fmt.Errorf("mysql failed to initialize with error %w", err)
-		}
 
 		if err == nil {
 
