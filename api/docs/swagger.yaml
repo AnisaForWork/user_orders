@@ -1,0 +1,392 @@
+basePath: /
+definitions:
+  auth.Auth:
+    properties:
+      login:
+        example: Login123
+        maxLength: 40
+        minLength: 3
+        type: string
+      password:
+        default: password
+        maxLength: 40
+        minLength: 6
+        type: string
+    required:
+    - login
+    - password
+    type: object
+  auth.Registration:
+    properties:
+      email:
+        example: test@test.com
+        type: string
+      fullName:
+        example: Ivanov Ivan Ivanovich
+        maxLength: 75
+        minLength: 3
+        type: string
+      login:
+        example: Login123
+        maxLength: 40
+        minLength: 3
+        type: string
+      password:
+        example: password
+        maxLength: 40
+        minLength: 6
+        type: string
+    required:
+    - email
+    - fullName
+    - login
+    - password
+    type: object
+  product.Created:
+    properties:
+      barcode:
+        default: "1234567890"
+        type: string
+      cost:
+        default: 100
+        minimum: 10
+        type: integer
+      desc:
+        default: Description
+        maxLength: 1000
+        minLength: 10
+        type: string
+      name:
+        default: product name
+        maxLength: 60
+        minLength: 10
+        type: string
+    required:
+    - barcode
+    - cost
+    - desc
+    - name
+    type: object
+  response.JSONResult:
+    properties:
+      data: {}
+      message:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: User products service API using swagger 2.0.
+  termsOfService: http://swagger.io/terms/
+  title: User products service API
+  version: "1.0"
+paths:
+  /auth/auth:
+    post:
+      consumes:
+      - application/json
+      description: sing in user if they have given valid credentials, returns access
+        token(JWT)
+      parameters:
+      - description: login,password
+        in: body
+        name: auth
+        required: true
+        schema:
+          $ref: '#/definitions/auth.Auth'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+      summary: Sing in user
+      tags:
+      - auth
+  /auth/reg:
+    post:
+      consumes:
+      - application/json
+      description: 'singUp with credentials user : login,full name,email,password'
+      parameters:
+      - description: login,full name,email,password
+        in: body
+        name: reg
+        required: true
+        schema:
+          $ref: '#/definitions/auth.Registration'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+      summary: Register user
+      tags:
+      - auth
+  /product/:
+    post:
+      consumes:
+      - application/json
+      description: user provides products barcode, name, description and cost
+      parameters:
+      - description: barcode,name,desc,cost
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/product.Created'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+      security:
+      - ApiKeyAuth: []
+      summary: Create new product
+      tags:
+      - product
+  /product/{barcode}:
+    delete:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: archives product but don't delete it from storage, only owner of
+        product can do it
+      parameters:
+      - description: Product barcode
+        in: path
+        name: barcode
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete user product
+      tags:
+      - product
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: returns full info about product user chose to view, only owner
+        of product can view it
+      parameters:
+      - description: Product barcode
+        in: path
+        name: barcode
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+      security:
+      - ApiKeyAuth: []
+      summary: Returns user product full info
+      tags:
+      - product
+  /product/{barcode}/check:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: using info about given product generates PDF check using special
+        PDF template
+      parameters:
+      - description: Product barcode
+        in: path
+        name: barcode
+        required: true
+        type: string
+      produces:
+      - application/json
+      - application/pdf
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+      security:
+      - ApiKeyAuth: []
+      summary: Generates check
+      tags:
+      - product
+  /product/all:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: configured to return set number of products(barcodes+name+cost)
+        per request, user sends configures how many products per page be seen and
+        offset, only owner of product can view it
+      parameters:
+      - description: Next page to retrieve
+        in: query
+        maximum: 50000
+        minimum: 1
+        name: p
+        required: true
+        type: integer
+      - description: Number of products info per page
+        in: query
+        maximum: 100
+        minimum: 1
+        name: "n"
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+      security:
+      - ApiKeyAuth: []
+      summary: Returns all users products with pagnation
+      tags:
+      - product
+  /product/check/{checkName}:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: sends user PDF check generated previously using product info, only
+        owner of product can do it
+      parameters:
+      - description: Check file name
+        in: path
+        name: checkName
+        required: true
+        type: string
+      produces:
+      - application/json
+      - application/pdf
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+      security:
+      - ApiKeyAuth: []
+      summary: Returns check of user product
+      tags:
+      - product
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

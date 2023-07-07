@@ -19,3 +19,11 @@
 
 # Go workspace file
 go.work
+
+.env 
+.vscode
+Makefile 
+  
+./configs/config.yml
+docker/volumes 
+Dockerfile.hot 

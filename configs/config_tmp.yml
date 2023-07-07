@@ -1,0 +1,37 @@
+tokenGen:
+  port : 
+  host : 
+  timeout: 
+  retry: 
+  timeoutRetry:  
+
+srv: 
+  maxHeaderBytes:  
+  readTimeout:  
+  writeTimeout:  
+  readHeaderTimeout:  
+  timeOutSec:      
+  port:           
+  host:  
+
+mysql:
+  username:  
+  host:   
+  port:  
+  dbname:    
+  options:  
+  connMaxLifetime:  
+  maxOpenConns:  
+  maxIdleConns: 
+  retry: 
+  timeWaitPerTry :  
+
+product: 
+  pathToCheckDir:  
+  pathToTemplate:  
+  templateName: 
+  fontName:  
+  fontFileName:  
+  timeFormat: 
+  templateW:  
+  templateH :  
