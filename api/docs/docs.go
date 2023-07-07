@@ -161,8 +161,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created",
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/response.JSONResult"
                         }
@@ -227,8 +227,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created",
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/response.JSONResult"
                         }
@@ -266,7 +266,8 @@ const docTemplate = `{
                     "application/x-www-form-urlencoded"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "application/pdf"
                 ],
                 "tags": [
                     "product"
@@ -282,10 +283,10 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created",
+                    "200": {
+                        "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/response.JSONResult"
+                            "type": "file"
                         }
                     },
                     "400": {
@@ -309,8 +310,61 @@ const docTemplate = `{
                 }
             }
         },
-        "/product/{id}": {
+        "/product/{barcode}": {
             "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "returns full info about product user chose to view, only owner of product can view it",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "product"
+                ],
+                "summary": "Returns user product full info",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Product barcode",
+                        "name": "barcode",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSONResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSONResult"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSONResult"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSONResult"
+                        }
+                    }
+                }
+            },
+            "delete": {
                 "security": [
                     {
                         "ApiKeyAuth": []
@@ -337,8 +391,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created",
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/response.JSONResult"
                         }
@@ -364,7 +418,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/product/{id}/check": {
+        "/product/{barcode}/check": {
             "get": {
                 "security": [
                     {

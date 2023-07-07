@@ -109,7 +109,7 @@ func (r *Repository) UserRegistered(ctx context.Context, login string, pwd []byt
 type Product struct {
 	Barcode string    `json:"barcode" `
 	Name    string    `json:"name" `
-	Desc    string    `json:"desc" `
+	Descr   string    `json:"descr" `
 	Cost    int       `json:"cost" `
 	UserID  int64     `json:"userId"`
 	Deleted bool      `json:"deleted"`
@@ -120,7 +120,7 @@ func (r *Repository) Create(ctx context.Context, pr Product, login string) (err 
 	ctx, cancel := context.WithTimeout(ctx, timeOut*3)
 	defer cancel()
 
-	query := "INSERT INTO products (barcode, name, desc, cost,userId) values (?,?,?,?,?) "
+	query := "INSERT INTO products (barcode, name, descr, cost,userId) values (?,?,?,?,?) "
 	selector := "SELECT id FROM users WHERE login = ?"
 
 	var tx *sqlx.Tx
@@ -142,7 +142,7 @@ func (r *Repository) Create(ctx context.Context, pr Product, login string) (err 
 		return ErrNoRows
 	}
 
-	res, err := r.db.ExecContext(ctx, query, pr.Barcode, pr.Name, pr.Desc, pr.Cost, id)
+	res, err := r.db.ExecContext(ctx, query, pr.Barcode, pr.Name, pr.Descr, pr.Cost, id)
 
 	if err != nil {
 		errMsql, ok := err.(*mysql.MySQLError)
@@ -167,7 +167,7 @@ func (r *Repository) UserProducts(ctx context.Context, amount int, offset int, u
 
 	query := `SELECT barcode, name, cost FROM products 
 				JOIN users ON users.id=products.userId AND users.login=? 
-				ORDER BY created 
+				ORDER BY products.created 
 				LIMIT ? OFFSET ?`
 
 	ctx, cancel := context.WithTimeout(ctx, timeOut*3)
@@ -179,13 +179,13 @@ func (r *Repository) UserProducts(ctx context.Context, amount int, offset int, u
 
 	return prods, err
 }
-func (r *Repository) UserProduct(ctx context.Context, barcode string, login string) (pr *Product, checks []string, err error) {
-	queryPr := `SELECT barcode, name, cost, desc,created FROM products 
+func (r *Repository) UserProduct(ctx context.Context, barcode string, login string) (pr *Product, prchecks []string, err error) {
+	queryPr := `SELECT barcode, name, cost, descr,products.created FROM products 
 					JOIN users ON users.id=products.userId AND users.login=? 
 					WHERE barcode=? AND deleted=FALSE 
 					LIMIT 1`
-	queryCh := `SELECT filename FROM checks 
-					JOIN products ON products.barcode=checks.barcode 
+	queryCh := `SELECT filename FROM prchecks 
+					WHERE prchecks.barcode=? 
 					LIMIT 100`
 
 	ctx, cancel := context.WithTimeout(ctx, timeOut*3)
@@ -204,13 +204,13 @@ func (r *Repository) UserProduct(ctx context.Context, barcode string, login stri
 	}
 
 	pr = &Product{}
-	err = r.db.SelectContext(ctx, pr, queryPr, login, barcode)
+	err = r.db.GetContext(ctx, pr, queryPr, login, barcode)
 	if err != nil {
 		return nil, nil, ErrNoRows
 	}
 
-	checks = []string{}
-	err = r.db.SelectContext(ctx, &checks, queryCh, barcode)
+	prchecks = []string{}
+	err = r.db.SelectContext(ctx, &prchecks, queryCh, barcode)
 	if err != nil {
 		return nil, nil, ErrNoRows
 	}
@@ -220,7 +220,7 @@ func (r *Repository) UserProduct(ctx context.Context, barcode string, login stri
 	if err != nil {
 		return nil, nil, err
 	}
-	return pr, checks, err
+	return pr, prchecks, err
 }
 func (r *Repository) Delete(ctx context.Context, barcode string, login string) error {
 	ctx, cancel := context.WithTimeout(ctx, timeOut)
@@ -257,7 +257,7 @@ func (r *Repository) ProductInfoForCheck(ctx context.Context, barcode string, lo
 
 	var pr Product
 
-	err := r.db.SelectContext(ctx, &pr, queryPr, login, barcode)
+	err := r.db.GetContext(ctx, &pr, queryPr, login, barcode)
 	if err != nil {
 		return nil, ErrNoRows
 	}
@@ -268,7 +268,7 @@ func (r *Repository) UpdateCheckInfo(ctx context.Context, filename string, barco
 	ctx, cancel := context.WithTimeout(ctx, timeOut*3)
 	defer cancel()
 
-	query := "INSERT INTO checks (filename,barcode) values (?,?) "
+	query := "INSERT INTO prchecks (filename,barcode) values (?,?) "
 	selector := `SELECT 1 FROM products 
 					JOIN users ON users.id=products.userId AND users.login=? 
 					WHERE barcode=? AND deleted=FALSE 
@@ -287,7 +287,7 @@ func (r *Repository) UpdateCheckInfo(ctx context.Context, filename string, barco
 	}
 	var checkUser int
 
-	err = tx.QueryRow(selector, login).Scan(&checkUser)
+	err = tx.QueryRow(selector, login, barcode).Scan(&checkUser)
 
 	if err != nil {
 		return ErrNoRows
@@ -317,23 +317,19 @@ func (r *Repository) CheckOwnership(ctx context.Context, filename string, login 
 	ctx, cancel := context.WithTimeout(ctx, timeOut)
 	defer cancel()
 
-	query := `SELECT 1 FROM checks 
-				JOIN products ON checks.barcode=products.barcode 
+	query := `SELECT 1 FROM prchecks 
+				JOIN products ON prchecks.barcode=products.barcode 
 				JOIN users ON users.id=products.userId AND users.login=? 
-				WHERE checks.filename=? AND products.deleted=FALSE LIMIT 1`
+				WHERE prchecks.filename=? AND products.deleted=FALSE LIMIT 1`
 
-	res, err := r.db.ExecContext(ctx, query, login, filename)
+	var res int
+	err := r.db.QueryRowContext(ctx, query, login, filename).Scan(&res)
 
 	if err != nil {
 		return err
 	}
 
-	rowC, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rowC == 0 {
+	if res != 1 {
 		return ErrNoRows
 	}
 

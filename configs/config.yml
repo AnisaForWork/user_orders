@@ -30,8 +30,8 @@ mysql:
   timeWaitPerTry : 3000000000 #3s
 
 product:
-  pathToCheckDir: "./tmp"
-  pathToTemplate: "./tmp"
+  pathToCheckDir: "D:\\Projects\\Go\\shop_work\\user_orders\\user_orders\\tmp"
+  pathToTemplate: "D:\\Projects\\Go\\shop_work\\user_orders\\user_orders\\tmp"
   templateName: "template.pdf"
   fontName: "wts11"
   fontFileName: "wts11.ttf"

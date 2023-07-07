@@ -184,8 +184,11 @@ func (cfg *Configurator) ServiceConfig() (*Service, error) {
 		return nil, err
 	}
 
+	product := cfg.ProductConfig()
+
 	s := &Service{
-		Auth: auth,
+		Auth:    auth,
+		Product: product,
 	}
 	return s, nil
 }

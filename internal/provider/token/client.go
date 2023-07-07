@@ -112,7 +112,7 @@ func (provider *JWTProvider) ValidateToken(header string) error {
 		}
 
 		req.Header = http.Header{
-			"Authorization": []string{header},
+			"Authorization": []string{"bearer " + header},
 		}
 		resp, err := provider.client.Do(req)
 

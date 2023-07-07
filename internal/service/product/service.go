@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -56,7 +55,7 @@ type Product struct {
 	FileName []string
 }
 
-func NewService(repo Repository, cfg config.Product) *PService {
+func NewService(repo Repository, cfg *config.Product) *PService {
 
 	s := &PService{
 		Repo:           repo,
@@ -78,7 +77,7 @@ func (s *PService) Create(ctx context.Context, pr Product, login string) error {
 	dbModel := mysql.Product{
 		Barcode: pr.Barcode,
 		Name:    pr.Name,
-		Desc:    pr.Descr,
+		Descr:   pr.Descr,
 		Cost:    pr.Cost,
 	}
 	return s.Repo.Create(ctx, dbModel, login)
@@ -124,7 +123,7 @@ func (s *PService) UserProduct(ctx context.Context, barcode string, login string
 	res := &Product{
 		Barcode:  dbModel.Barcode,
 		Name:     dbModel.Name,
-		Descr:    dbModel.Desc,
+		Descr:    dbModel.Descr,
 		Cost:     dbModel.Cost,
 		Created:  dbModel.Created,
 		FileName: checks,
@@ -138,32 +137,32 @@ func (s *PService) Delete(ctx context.Context, barcode string, login string) err
 }
 
 // GenCheck creates check for product? saves in configured directory and send PDF to user
-func (s *PService) GenCheck(ctx context.Context, barcode string, login string) (gopdf.GoPdf, error) {
+func (s *PService) GenCheck(ctx context.Context, barcode string, login string) (*os.File, error) {
 	prod, err := s.Repo.ProductInfoForCheck(ctx, barcode, login)
 
 	if err != nil {
-		return gopdf.GoPdf{}, err
+		return nil, err
 	}
 
 	pdf := gopdf.GoPdf{}
-	pdf.Start(gopdf.Config{PageSize: gopdf.Rect{W: s.TemplateW, H: s.TemplateW}})
+	pdf.Start(gopdf.Config{PageSize: gopdf.Rect{W: s.TemplateW, H: s.TemplateH}})
 	pdf.AddPage()
 
 	path := filepath.Join(s.PathToTemplate, s.TemplateName)
 	// import template file
 	tpl := pdf.ImportPage(path, 1, "/MediaBox") // 1 is the page
 	// Draw pdf onto page
-	pdf.UseImportedTemplate(tpl, 0, 0, s.TemplateW, s.TemplateW) // Template structure, x coordinate, y coordinate, width, height
+	pdf.UseImportedTemplate(tpl, 0, 0, s.TemplateW, s.TemplateH) // Template structure, x coordinate, y coordinate, width, height
 
 	path = filepath.Join(s.PathToTemplate, s.FontFileName)
 	err = pdf.AddTTFFont(s.FontName, path)
 	if err != nil {
-		return gopdf.GoPdf{}, err
+		return nil, err
 	}
 
 	err = pdf.SetFont(s.FontName, "", 10)
 	if err != nil {
-		return gopdf.GoPdf{}, err
+		return nil, err
 	}
 	pdf.SetXY(21, 36)
 	pdf.Text(prod.Barcode) // y coordinate specification
@@ -181,13 +180,18 @@ func (s *PService) GenCheck(ctx context.Context, barcode string, login string) (
 	path = filepath.Join(s.PathToCheckDir, fileName)
 	err = s.Repo.UpdateCheckInfo(ctx, fileName, barcode, login)
 	if err != nil {
-		return gopdf.GoPdf{}, err
+		return nil, err
 	}
 	pdf.WritePdf(path)
-	return pdf, nil
+
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	return f, nil
 }
 
-func (s *PService) UserProductCheck(ctx context.Context, fileName string, login string) (io.Reader, error) {
+func (s *PService) UserProductCheck(ctx context.Context, fileName string, login string) (*os.File, error) {
 	err := s.Repo.CheckOwnership(ctx, fileName, login)
 	if err != nil {
 		return nil, ErrNotOwner

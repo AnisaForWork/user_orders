@@ -172,8 +172,8 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
-          description: Created
+        "200":
+          description: OK
           schema:
             $ref: '#/definitions/response.JSONResult'
         "400":
@@ -193,8 +193,8 @@ paths:
       summary: Create new product
       tags:
       - product
-  /product/{id}:
-    get:
+  /product/{barcode}:
+    delete:
       consumes:
       - application/x-www-form-urlencoded
       description: archives product but don't delete it from storage, only owner of
@@ -208,8 +208,8 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
-          description: Created
+        "200":
+          description: OK
           schema:
             $ref: '#/definitions/response.JSONResult'
         "400":
@@ -229,7 +229,42 @@ paths:
       summary: Delete user product
       tags:
       - product
-  /product/{id}/check:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: returns full info about product user chose to view, only owner
+        of product can view it
+      parameters:
+      - description: Product barcode
+        in: path
+        name: barcode
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSONResult'
+      security:
+      - ApiKeyAuth: []
+      summary: Returns user product full info
+      tags:
+      - product
+  /product/{barcode}/check:
     get:
       consumes:
       - application/x-www-form-urlencoded
@@ -291,8 +326,8 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
-          description: Created
+        "200":
+          description: OK
           schema:
             $ref: '#/definitions/response.JSONResult'
         "400":
@@ -326,11 +361,12 @@ paths:
         type: string
       produces:
       - application/json
+      - application/pdf
       responses:
-        "201":
-          description: Created
+        "200":
+          description: OK
           schema:
-            $ref: '#/definitions/response.JSONResult'
+            type: file
         "400":
           description: Bad Request
           schema:

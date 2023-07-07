@@ -21,7 +21,7 @@ type Service struct {
 // NewRouter returns instane of business loggic
 func NewService(repo Repository, provider *token.JWTProvider, srvCfg *config.Service) *Service {
 	a := auth.NewService(repo, provider, srvCfg.Auth)
-	p := product.NewService(repo, *srvCfg.Product)
+	p := product.NewService(repo, srvCfg.Product)
 	s := &Service{
 		AService: a,
 		PService: p,

@@ -39,7 +39,7 @@ type Product struct {
 // @Produce      json
 // @Security     ApiKeyAuth
 // @Param        product      body  product.Created true "barcode,name,desc,cost"
-// @Success      201  {object}  response.JSONResult
+// @Success      200  {object}  response.JSONResult
 // @Failure      400  {object}  response.JSONResult
 // @Failure      409  {object}  response.JSONResult
 // @Failure      500  {object}  response.JSONResult
@@ -77,7 +77,7 @@ func (p *Router) create(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, response.CreateJSONResult("Product created", []string{login, prodt.Barcode}))
+	c.JSON(http.StatusCreated, response.CreateJSONResult("Product created", login+" "+prodt.Barcode))
 }
 
 // @Summary      Returns all users products with pagnation
@@ -88,7 +88,7 @@ func (p *Router) create(c *gin.Context) {
 // @Security     ApiKeyAuth
 // @Param   	 p query     int    true "Next page to retrieve" minimum(1)    maximum(50000)
 // @Param   	 n query     int    true "Number of products info per page" minimum(1)    maximum(100)
-// @Success      201  {object}  response.JSONResult
+// @Success      200  {object}  response.JSONResult
 // @Failure      400  {object}  response.JSONResult
 // @Failure      403  {object}  response.JSONResult
 // @Failure      500  {object}  response.JSONResult
@@ -106,7 +106,7 @@ func (p *Router) allUserProducts(c *gin.Context) {
 	}
 
 	prodsPerPage, err := strconv.Atoi(c.Query("n"))
-	if err != nil || (prodsPerPage < 1 || prodsPerPage > 0) {
+	if err != nil || (prodsPerPage < 1 || prodsPerPage > 100) {
 		c.JSON(http.StatusBadRequest, validator.ErrorMsg("n", "shouldd be between 1 and 100"))
 		return
 	}
@@ -138,17 +138,17 @@ func (p *Router) allUserProducts(c *gin.Context) {
 // @Produce      json
 // @Security     ApiKeyAuth
 // @Param 		 barcode   path      string true  "Product barcode"
-// @Success      201  {object}  response.JSONResult
+// @Success      200  {object}  response.JSONResult
 // @Failure      400  {object}  response.JSONResult
 // @Failure      404  {object}  response.JSONResult
 // @Failure      500  {object}  response.JSONResult
-// @Router       /product/{id} [get]
+// @Router       /product/{barcode} [get]
 func (p *Router) userProduct(c *gin.Context) {
 	log := logrus.WithContext(c.Request.Context())
 
 	login := c.GetString(middleware.KeyUserID)
 
-	barcode := c.Query("barcode")
+	barcode := c.Param("barcode")
 	if !p.barcodeRegex.MatchString(barcode) {
 		c.JSON(http.StatusBadRequest, validator.ErrorMsg("barcode", "should consist of ten numeric numbers"))
 		return
@@ -180,17 +180,17 @@ func (p *Router) userProduct(c *gin.Context) {
 // @Produce      json
 // @Security     ApiKeyAuth
 // @Param 		 barcode   path      string true  "Product barcode"
-// @Success      201  {object}  response.JSONResult
+// @Success      200  {object}  response.JSONResult
 // @Failure      400  {object}  response.JSONResult
 // @Failure      404  {object}  response.JSONResult
 // @Failure      500  {object}  response.JSONResult
-// @Router       /product/{id} [get]
+// @Router       /product/{barcode} [delete]
 func (p *Router) delete(c *gin.Context) {
 	log := logrus.WithContext(c.Request.Context())
 
 	login := c.GetString(middleware.KeyUserID)
 
-	barcode := c.Query("barcode")
+	barcode := c.Param("barcode")
 	if !p.barcodeRegex.MatchString(barcode) {
 		c.JSON(http.StatusBadRequest, validator.ErrorMsg("barcode", "should consist of ten numeric numbers"))
 		return
@@ -227,19 +227,19 @@ func (p *Router) delete(c *gin.Context) {
 // @Failure      400  {object}  response.JSONResult
 // @Failure      403  {object}  response.JSONResult
 // @Failure      500  {object}  response.JSONResult
-// @Router       /product/{id}/check [get]
+// @Router       /product/{barcode}/check [get]
 func (p *Router) genCheck(c *gin.Context) {
 	log := logrus.WithContext(c.Request.Context())
 
 	login := c.GetString(middleware.KeyUserID)
 
-	barcode := c.Query("barcode")
+	barcode := c.Param("barcode")
 	if !p.barcodeRegex.MatchString(barcode) {
 		c.JSON(http.StatusBadRequest, validator.ErrorMsg("barcode", "should consist of ten numeric numbers"))
 		return
 	}
 
-	pdrWriter, err := p.service.GenCheck(c.Request.Context(), barcode, login)
+	f, err := p.service.GenCheck(c.Request.Context(), barcode, login)
 	if err != nil {
 		log.WithFields(logrus.Fields{
 			"handler":   "product",
@@ -254,11 +254,13 @@ func (p *Router) genCheck(c *gin.Context) {
 
 		return
 	}
+	defer f.Close()
 
 	c.Header("Content-type", "application/pdf")
 	c.Status(http.StatusOK)
-	err = pdrWriter.Write(c.Writer)
-	pdrWriter.Close()
+	if _, err := io.Copy(c.Writer, f); err != nil {
+		c.JSON(http.StatusBadRequest, validator.ErrorMsg("barcode", "should consist of ten numeric numbers"))
+	}
 	if err != nil {
 		log.WithError(err).Warn("Could not send check")
 	}
@@ -271,7 +273,8 @@ func (p *Router) genCheck(c *gin.Context) {
 // @Produce      json
 // @Security     ApiKeyAuth
 // @Param 		 checkName   path   string true  "Check file name"
-// @Success      201  {object}  response.JSONResult
+// @Produce  	 application/pdf
+// @Success 	 200 {file} PdfFile
 // @Failure      400  {object}  response.JSONResult
 // @Failure      403  {object}  response.JSONResult
 // @Failure      500  {object}  response.JSONResult
@@ -281,19 +284,15 @@ func (p *Router) productCheck(c *gin.Context) {
 
 	login := c.GetString(middleware.KeyUserID)
 
-	barcode := c.Query("barcode")
-	if !p.barcodeRegex.MatchString(barcode) {
-		c.JSON(http.StatusBadRequest, validator.ErrorMsg("barcode", "should consist of ten numeric numbers"))
-		return
-	}
+	ch := c.Param("checkName")
 
-	f, err := p.service.UserProductCheck(c.Request.Context(), barcode, login)
+	f, err := p.service.UserProductCheck(c.Request.Context(), ch, login)
 	if err != nil {
 		log.WithFields(logrus.Fields{
 			"handler":   "product",
 			"func":      "create",
 			"userLogin": login,
-			"barcode":   barcode,
+			"check":     ch,
 		}).Error("Error sending check file")
 
 		errInf := p.errMapper.MapError(err)
@@ -302,6 +301,7 @@ func (p *Router) productCheck(c *gin.Context) {
 
 		return
 	}
+	defer f.Close()
 
 	c.Header("Content-type", "application/pdf")
 	c.Status(http.StatusOK)
